@@ -1,35 +1,41 @@
-name: Build Mod
-on: [push, workflow_dispatch]
+
+name: Build SkyLyrics Mod
+
+on:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up JDK 21
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
 
-      - name: Locate and Build Project
+      - name: Find Gradle project
         run: |
-          # Find where build.gradle lives in the repository
-          GRADLE_DIR=$(dirname $(find . -name "build.gradle" | head -n 1))
-          echo "Found project directory at: $GRADLE_DIR"
-          cd "$GRADLE_DIR"
-          
-          # Force generate wrapper scripts locally on the cloud runner
-          gradle wrapper --gradle-version 9.2.0
-          chmod +x gradlew
-          
-          # Run the build
-          ./gradlew build
+          find . -maxdepth 4 \( -name build.gradle -o -name build.gradle.kts \)
 
-      - name: Upload Mod Jar
+      - name: Build mod
+        run: |
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+            ./gradlew build
+          elif [ -f gradle/wrapper/gradle-wrapper.properties ]; then
+            gradle build
+          else
+            echo "No Gradle wrapper found in repository root."
+            exit 1
+          fi
+
+      - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
-          name: NeonLyrics-Fabric-Mod
-          path: "**/build/libs/*.jar"
-
-
+          name: SkyLyrics-Mod
+          path: '**/build/libs/*.jar'
